@@ -10,7 +10,7 @@ class LWEInstance:
     Klasa pomocnicza przechowująca instancję problemu LWE.
     """
 
-    def __init__(self, n, m, q, alpha):
+    def __init__(self, n: int, m: int, q: int, alpha: float):
         self.n = n  # Wymiar sekretu
         self.m = m  # Liczba próbek
         self.q = q  # Moduł
@@ -21,9 +21,8 @@ class LWEInstance:
         self.e = None
         self.b = None
 
-    def generate(self):
+    def generate(self) -> tuple[np.ndarray, np.ndarray]:
         """Generuje losową instancję LWE: b = As + e mod q."""
-        print(f"[*] Generowanie instancji LWE (n={self.n}, m={self.m}, q={self.q})...")
 
         # 1. Macierz publiczna A (m x n)
         self.A = np.random.randint(0, self.q, size=(self.m, self.n))
@@ -36,20 +35,21 @@ class LWEInstance:
         # W praktyce LWE często używa dyskretnego rozkładu Gaussa, tutaj przybliżenie:
         self.e = np.round(np.random.normal(0, sigma, size=self.m)).astype(int)
 
-        # 4. Obliczenie b = As + e (mod q)
-        # Używamy np.dot dla mnożenia macierzy
-        self.b = (np.dot(self.A, self.s) + self.e) % self.q
+        self.b = (self.A @ self.s + self.e) % self.q
 
-        print("[+] Instancja wygenerowana pomyślnie.")
         return self.A, self.b
 
-    def check_solution(self, candidate_s):
+    def check_solution(self, candidate_s: np.ndarray | None) -> bool:
         """Weryfikuje, czy podany kandydat na sekret jest poprawny."""
+
         if candidate_s is None:
             return False
 
+        if self.A is None or self.b is None:
+            raise ValueError("Instancja LWE nie została wygenerowana.")
+
         # Sprawdź czy As' jest blisko b (różnica powinna być małym błędem)
-        b_calc = np.dot(self.A, candidate_s) % self.q
+        b_calc = self.A @ candidate_s % self.q
         diff = (
             self.b - b_calc + self.q // 2
         ) % self.q - self.q // 2  # Centrowanie modulo
@@ -58,7 +58,7 @@ class LWEInstance:
         norm_diff = np.linalg.norm(diff)
         expected_norm = np.sqrt(self.m) * (self.alpha * self.q)
 
-        # Margines błędu dla weryfikacji (np. 1.5x oczekiwanej normy)
+        # Margines błędu dla weryfikacji - 2x oczekiwanej normy
         is_correct = norm_diff < (expected_norm * 2.0)
 
         # Dodatkowa weryfikacja dokładna (dla symulacji, gdy znamy s)
@@ -67,7 +67,7 @@ class LWEInstance:
         return is_correct or is_exact
 
 
-def build_primal_lattice(A, b, q):
+def build_primal_lattice(A: np.ndarray, b: np.ndarray, q: int) -> IntegerMatrix:
     """
     Konstruuje macierz bazy dla ataku Primal (Kannan's Embedding).
 
@@ -108,7 +108,9 @@ def build_primal_lattice(A, b, q):
     return B
 
 
-def primal_attack(A, b, q, block_size=20):
+def primal_attack(
+    A: np.ndarray, b: np.ndarray, q: int, block_size: int = 20, log: bool = True
+) -> tuple[np.ndarray | None, float]:
     """
     Przeprowadza atak Primal używając redukcji BKZ.
     """
@@ -163,8 +165,10 @@ def primal_attack(A, b, q, block_size=20):
     return None, reduction_time
 
 
-def verify_candidate(A, b, s_candidate, q, alpha=0.005):  # Dodaj alpha
-    b_prime = np.dot(A, s_candidate) % q
+def verify_candidate(
+    A: np.ndarray, b: np.ndarray, s_candidate: np.ndarray, q: int, alpha: float = 0.005
+) -> bool:  # Dodaj alpha
+    b_prime = A @ s_candidate % q
     diff = (b - b_prime + q // 2) % q - q // 2
     norm = np.linalg.norm(diff)
 
@@ -185,8 +189,6 @@ if __name__ == "__main__":
     print("   PROJEKT: ATAK PRIMAL NA LWE (DEMO)    ")
     print("=========================================")
 
-    # PARAMETRY "TOY EXAMPLE" (Małe, aby działało szybko na laptopie)
-    # W prawdziwym LWE n=500+, tutaj n=40
     n = 10
     m = 60  # Zazwyczaj m = 2n dla wystarczającej nadmiarowości
     q = 101  # Liczba pierwsza
@@ -197,9 +199,9 @@ if __name__ == "__main__":
 
     # 1. Generowanie Wyzwania
     lwe = LWEInstance(n, m, q, alpha)
+    print(f"[*] Generowanie instancji LWE (n={n}, m={m}, q={q})...")
     A, b = lwe.generate()
-
-    print(f"\nSekret do znalezienia (pierwsze 5 el.): {lwe.s[:5]}...")
+    print("[+] Instancja wygenerowana pomyślnie.")
 
     # 2. Uruchomienie ataku
     recovered_s, time_taken = primal_attack(A, b, q, block_size=bkz_block_size)
@@ -211,7 +213,7 @@ if __name__ == "__main__":
     print("                WYNIKI                   ")
     print("=========================================")
 
-    if recovered_s is not None:
+    if lwe.check_solution(recovered_s):
         print("[SUKCES] Znaleziono sekret!")
         print(f"Oryginalny s:   {lwe.s}")
         print(f"Odzyskany s:    {recovered_s}")
