@@ -2,13 +2,17 @@
     "python.formatting.provider": "black",
     "cSpell.words": [
         "ciphertext",
+        "ciphertexts",
         "cysignals",
         "fpylll",
-        "Kannan",
+        "kannan",
+        "kryptosystemu",
         "kryptosystemy",
         "linalg",
         "numpy",
         "regev",
+        "savez",
+        "tobytes",
         "venv"
     ]
 }

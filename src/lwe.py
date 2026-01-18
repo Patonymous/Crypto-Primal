@@ -1,4 +1,5 @@
 import numpy as np
+import json
 
 
 def center_modulo(x: np.ndarray, q: int) -> np.ndarray:
@@ -10,37 +11,76 @@ class LWE:
     Klasa pomocnicza przechowująca instancję problemu LWE.
     """
 
-    def __init__(self, n: int, m: int, q: int, alpha: float):
-        self.n = n  # Wymiar sekretu
-        self.m = m  # Liczba próbek
-        self.q = q  # Moduł
-        self.sigma = alpha * q  # Odchylenie standardowe szumu
+    def __init__(self):
+        self.n: int  # Wymiar sekretu
+        self.m: int  # Liczba próbek
+        self.q: int  # Moduł
+        self.sigma: float  # Odchylenie standardowe szumu
 
         # Publicznie znane
-        self.A = None
-        self.b = None
+        self.A: np.ndarray = None
+        self.b: np.ndarray = None
 
         # Tajne
-        self._s = None
-        self._e = None
+        self._s: np.ndarray | None = None
+        self._e: np.ndarray | None = None
 
-    def generate(self) -> tuple[np.ndarray, np.ndarray]:
+    def generate(self, n: int, m: int, q: int, alpha: float) -> None:
         """Generuje losową instancję LWE: b = As + e mod q."""
 
-        # 1. Macierz publiczna A (m x n)
-        self.A = np.random.randint(0, self.q, size=(self.m, self.n))
+        self.n = n
+        self.m = m
+        self.q = q
+        self.sigma = alpha * q
 
-        # 2. Sekret s (n) - losowy jednostajny
-        self._s = np.random.randint(0, self.q, size=self.n)
+        # Macierz publiczna A (m x n)
+        self.A = np.random.randint(0, q, size=(m, n))
 
-        # 3. Błąd e (m) - rozkład Gaussa, zaokrąglony do liczb całkowitych
+        # Sekret s (n) - losowy jednostajny
+        self._s = np.random.randint(0, q, size=n)
+
+        # Błąd e (m) - rozkład Gaussa, zaokrąglony do liczb całkowitych
         # W praktyce LWE często używa dyskretnego rozkładu Gaussa,
         # to jest przybliżenie, ale dostateczne na potrzeby projektu.
-        self._e = np.round(np.random.normal(0, self.sigma, size=self.m)).astype(int)
+        self._e = np.round(np.random.normal(0, self.sigma, size=m)).astype(int)
 
-        self.b = (self.A @ self._s + self._e) % self.q
+        self.b = (self.A @ self._s + self._e) % q
 
-        return self.A, self.b
+    def save(self, filename: str, private: bool) -> bool:
+        try:
+            with open(filename, "w") as writer:
+                data = {
+                    "n": self.n,
+                    "m": self.m,
+                    "q": self.q,
+                    "sigma": self.sigma,
+                    "A": self.A.tolist(),
+                    "b": self.b.tolist(),
+                }
+                if private:
+                    data["s"] = self._s.tolist()
+                    data["e"] = self._e.tolist()
+                writer.write(json.dumps(data, indent=2))
+        except Exception:
+            return False
+        return True
+
+    def load(self, filename: str, private: bool) -> bool:
+        try:
+            with open(filename, "r") as reader:
+                data = json.load(reader)
+                self.n = int(data["n"])
+                self.m = int(data["m"])
+                self.q = int(data["q"])
+                self.sigma = float(data["sigma"])
+                self.A = np.array(data["A"])
+                self.b = np.array(data["b"])
+                if private:
+                    self._s = np.array(data["s"])
+                    self._e = np.array(data["e"])
+        except Exception:
+            return False
+        return True
 
     def check_solution_correct(
         self, candidate_e: np.ndarray, candidate_s: np.ndarray, margin: float = 2.0
