@@ -9,9 +9,9 @@ from src.attack import primal_attack
 from src.regev import encrypt, decrypt
 
 
-def save_lwe(lwe: LWE, public: bool) -> None:
-    filename = "lwe.pub" if public else "lwe.key"
-    success = lwe.save(filename, public)
+def save_lwe(lwe: LWE, private: bool) -> None:
+    filename = "lwe.key" if private else "lwe.pub"
+    success = lwe.save(filename, private)
     if not success:
         with Printer(Style.ERROR) as printer:
             printer("")
@@ -19,10 +19,10 @@ def save_lwe(lwe: LWE, public: bool) -> None:
         sys.exit(1)
 
 
-def load_lwe(public: bool) -> LWE:
-    filename = "lwe.pub" if public else "lwe.key"
+def load_lwe(private: bool) -> LWE:
+    filename = "lwe.key" if private else "lwe.pub"
     lwe = LWE()
-    success = lwe.load(filename, public)
+    success = lwe.load(filename, private)
     if not success:
         with Printer(Style.ERROR) as printer:
             printer("")
