@@ -7,6 +7,8 @@ from src.printer import Printer, Style
 from src.lwe import LWE
 from src.attack import primal_attack
 from src.regev import encrypt, decrypt
+from src.interactive import interactive_attack
+from src.benchmark import compare_block_sizes, print_comparison_table, compare_parameters, print_params_comparison_table, plot_block_size_comparison, plot_success_heatmap_from_params, save_results_to_json, visualize_reduction, visualize_block_size_impact, generate_parameter_plots
 
 
 def save_lwe(lwe: LWE, private: bool) -> None:
@@ -133,6 +135,154 @@ def decrypt_message() -> None:
         printer(f"Odszyfrowana wiadomość: {decrypted_message}")
 
 
+def interactive(bkz_block_size: int) -> None:
+    """Tryb interaktywny ataku."""
+    with Printer(Style.LOG) as printer:
+        printer("Wczytywanie instancji LWE...", end="")
+    lwe = load_lwe(True)  # Potrzebujemy sekretu do weryfikacji
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    interactive_attack(lwe, bkz_block_size, auto=False)
+
+
+def benchmark(trials: int, output_dir: str = "report/img", seed: int | None = None) -> None:
+    """Benchmark porównujący rozmiary bloków BKZ i parametry LWE."""
+    from pathlib import Path
+    from src.benchmark import set_random_seed
+    
+    # Utwórz katalog jeśli nie istnieje
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    
+    # Ustaw ziarno dla powtarzalności
+    used_seed = set_random_seed(seed)
+    with Printer(Style.INFO) as printer:
+        printer(f"Ziarno losowości: {used_seed}")
+    
+    block_sizes = [10, 15, 20, 25, 30]
+    
+    # Część 1: Porównanie rozmiarów bloków dla aktualnej instancji LWE
+    with Printer(Style.LOG) as printer:
+        printer("Wczytywanie instancji LWE...", end="")
+    lwe = load_lwe(False)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    alpha = lwe.sigma / lwe.q
+    
+    with Printer(Style.INFO) as printer:
+        printer("")
+        printer("=" * 60)
+        printer("CZĘŚĆ 1: PORÓWNANIE ROZMIARÓW BLOKÓW BKZ")
+        printer("=" * 60)
+    
+    results_blocks = compare_block_sizes(
+        n=lwe.n, m=lwe.m, q=lwe.q, alpha=alpha,
+        block_sizes=block_sizes, trials=trials, seed=used_seed
+    )
+    print_comparison_table(results_blocks)
+    
+    # Generuj wykres dla bloków
+    with Printer(Style.LOG) as printer:
+        printer("\nGenerowanie wykresów rozmiarów bloków...", end="")
+    blocks_path = f"{output_dir}/benchmark_blocks.png"
+    plot_block_size_comparison(results_blocks, save_path=blocks_path)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    # Generuj wykresy redukcji kraty
+    with Printer(Style.LOG) as printer:
+        printer("Generowanie wykresów redukcji kraty...", end="")
+    reduction_path = f"{output_dir}/reduction_quality.png"
+    impact_path = f"{output_dir}/block_size_impact.png"
+    visualize_reduction(lwe, block_sizes=[10, 20, 30], save_path=reduction_path)
+    visualize_block_size_impact(lwe, max_block=40, save_path=impact_path)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    # Część 2: Porównanie różnych parametrów LWE
+    with Printer(Style.INFO) as printer:
+        printer("")
+        printer("=" * 60)
+        printer("CZĘŚĆ 2: PORÓWNANIE PARAMETRÓW LWE")
+        printer("=" * 60)
+    
+    # Zestawy parametrów - szerszy zakres do znalezienia granicy ataku
+    param_sets = [
+        # === Grupa 1: Wariacja wymiaru n (stałe: α=0.01, m=6n, q~10n) ===
+        # Szukamy granicy gdzie atak przestaje działać
+        {'n': 6, 'm': 36, 'q': 67, 'alpha': 0.01},
+        {'n': 8, 'm': 48, 'q': 83, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},  # BAZOWA
+        {'n': 12, 'm': 72, 'q': 127, 'alpha': 0.01},
+        {'n': 14, 'm': 84, 'q': 151, 'alpha': 0.01},
+        {'n': 16, 'm': 96, 'q': 167, 'alpha': 0.01},  # Trudniejsze
+        {'n': 18, 'm': 108, 'q': 181, 'alpha': 0.01}, # Bardzo trudne
+        {'n': 20, 'm': 120, 'q': 199, 'alpha': 0.01}, # Prawdopodobnie niemożliwe dla BKZ-25
+        
+        # === Grupa 2: Wariacja α - szerszy zakres do granicy (stałe: n=10, m=60, q=101) ===
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.002},  # Bardzo łatwe
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.005},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.008},
+        # alpha=0.01 już w grupie 1
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.015},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.02},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.025},  # Trudne
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.03},   # Bardzo trudne
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.04},   # Granica?
+        
+        # === Grupa 3: Wariacja m - stosunek m/n (stałe: n=10, q=101, α=0.01) ===
+        {'n': 10, 'm': 25, 'q': 101, 'alpha': 0.01},   # m=2.5n - za mało?
+        {'n': 10, 'm': 35, 'q': 101, 'alpha': 0.01},   # m=3.5n
+        {'n': 10, 'm': 45, 'q': 101, 'alpha': 0.01},   # m=4.5n
+        {'n': 10, 'm': 55, 'q': 101, 'alpha': 0.01},   # m=5.5n
+        # m=60 już w grupie 1
+        {'n': 10, 'm': 75, 'q': 101, 'alpha': 0.01},   # m=7.5n
+        {'n': 10, 'm': 90, 'q': 101, 'alpha': 0.01},   # m=9n
+        
+        # === Grupa 4: Wariacja q - większy zakres (stałe: n=10, m=60, α=0.01) ===
+        {'n': 10, 'm': 60, 'q': 53, 'alpha': 0.01},    # Małe q - łatwe
+        {'n': 10, 'm': 60, 'q': 73, 'alpha': 0.01},
+        # q=101 już w grupie 1
+        {'n': 10, 'm': 60, 'q': 149, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 199, 'alpha': 0.01},   # Trudne
+        {'n': 10, 'm': 60, 'q': 251, 'alpha': 0.01},   # Bardzo trudne
+    ]
+    
+    results_params = compare_parameters(param_sets, block_size=25, trials=trials, seed=used_seed)
+    print_params_comparison_table(results_params)
+    
+    # Zapisz wyniki do JSON
+    with Printer(Style.LOG) as printer:
+        printer("\nZapisywanie wyników do JSON...", end="")
+    json_path = f"{output_dir}/benchmark_results.json"
+    save_results_to_json(results_params, save_path=json_path)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    # Generuj wykresy parametryczne
+    with Printer(Style.LOG) as printer:
+        printer("Generowanie wykresów wpływu parametrów...", end="")
+    
+    param_plot_files = generate_parameter_plots(results_params, output_dir=output_dir)
+    
+    with Printer(Style.LOG) as printer:
+        if param_plot_files:
+            printer(f" Wygenerowano {len(param_plot_files)} wykresów")
+        else:
+            printer(" Pominięto (za mało danych)")
+    
+    with Printer(Style.SUCCESS) as printer:
+        printer("\nPliki wygenerowane:")
+        printer(f"  - {blocks_path}")
+        printer(f"  - {reduction_path}")
+        printer(f"  - {impact_path}")
+        printer(f"  - {json_path}")
+        if param_plot_files:
+            for pp in param_plot_files:
+                printer(f"  - {pp}")
+
+
 def attack_message(bkz_block_size: int) -> None:
     with Printer(Style.LOG) as printer:
         printer("Wczytywanie instancji LWE...", end="")
@@ -249,6 +399,14 @@ def main():
             printer("    Powinna być wywołana po akcji 'szyfruj'.")
             printer("    Przyjmuje opcjonalny parametr: rozmiar bloku BKZ")
             printer("    Domyślna wartość: 25")
+            printer("  i[nteraktywny] - atak krok po kroku z wyjaśnieniami")
+            printer("    Idealny do nauki i prezentacji.")
+            printer("    Przyjmuje opcjonalny parametr: rozmiar bloku BKZ")
+            printer("    Domyślna wartość: 25")
+            printer("  b[enchmark] - porównanie skuteczności ataku")
+            printer("    Testuje różne rozmiary bloków BKZ oraz parametry LWE.")
+            printer("    Generuje wykresy: rozmiary bloków, jakość redukcji, heatmapa.")
+            printer("    Przyjmuje opcjonalne parametry: liczba prób (domyślnie 3), katalog wyjściowy (domyślnie report/img)")
             printer("")
             printer("Opis parametrów:")
             printer(
@@ -296,11 +454,21 @@ def main():
         bkz_block_size = get_param(2, int, "rozmiar bloku BKZ", default=25)
         attack_message(bkz_block_size)
 
+    elif "interaktywny".startswith(action):
+        bkz_block_size = get_param(2, int, "rozmiar bloku BKZ", default=25)
+        interactive(bkz_block_size)
+
+    elif "benchmark".startswith(action):
+        trials = get_param(2, int, "liczba prób", default=5)
+        output_dir = get_param(3, str, "katalog wyjściowy", default="report/img")
+        seed = get_param(4, int, "ziarno losowości", default=None)
+        benchmark(trials, output_dir, seed)
+
     else:
         with Printer(Style.ERROR) as printer:
             printer(
                 # cspell: disable-next-line
-                f"Akcja musi być jedną z: p[omoc], g[eneruj], s[zyfruj], o[dszyfruj] lub a[takuj], otrzymano: {action}"
+                f"Nieznana akcja: {action}. Użyj 'pomoc' aby zobaczyć dostępne opcje."
             )
         sys.exit(1)
 
