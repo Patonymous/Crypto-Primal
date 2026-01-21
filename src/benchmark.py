@@ -1,11 +1,3 @@
-"""
-Moduł benchmarkowania ataku Primal.
-
-Porównuje różne rozmiary bloków BKZ pod kątem:
-- Współczynnika sukcesu
-- Czasu wykonania
-"""
-
 import numpy as np
 import time
 from dataclasses import dataclass

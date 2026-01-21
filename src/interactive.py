@@ -90,8 +90,9 @@ Konstrukcja macierzy bazy:
         [  A^T   I_n   0 ]
         [  b^T   0     1 ]
 
-Szukamy wektora (e, s, 1) który jest KRÓTKI
-(bo e i s mają małe elementy z rozkładu błędów).
+Szukamy KRÓTKIEGO wektora postaci (e·k, s·k, k) w kracie.
+Po znalezieniu normalizujemy przez k⁻¹ mod q, otrzymując (e, s, 1).
+Wektor jest krótki, bo e i s mają małe elementy z rozkładu błędów.
 """)
     
     B = build_primal_lattice(lwe)
@@ -106,8 +107,8 @@ Szukamy wektora (e, s, 1) który jest KRÓTKI
     print("-" * 60)
     print("""
 Algorytm Lenstra-Lenstra-Lovász:
-- Czas: wielomianowy O(d^5 log^3 B)
-- Jakość: słaba gwarancja (2^(d/2) * λ_1)
+- Czas: wielomianowy
+- Jakość: słaba gwarancja
 - Ale szybki i daje dobrą bazę startową dla BKZ
 """)
     
@@ -208,6 +209,7 @@ def try_extract_secret(B: IntegerMatrix, lwe: LWE, verbose: bool = False) -> np.
                     print(f"  → ZNALEZIONO!")
                 return s_candidate
     
+    # Sekret nie został znaleziony w żadnym wierszu
     return None
 
 
