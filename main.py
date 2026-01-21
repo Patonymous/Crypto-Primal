@@ -159,7 +159,7 @@ def benchmark(trials: int, output_dir: str = "report/img", seed: int | None = No
     with Printer(Style.INFO) as printer:
         printer(f"Ziarno losowości: {used_seed}")
     
-    block_sizes = [10, 15, 20, 25, 30]
+    block_sizes = [5, 7, 10, 12, 15, 18, 20, 22, 25, 30, 35, 40]
     
     # Część 1: Porównanie rozmiarów bloków dla aktualnej instancji LWE
     with Printer(Style.LOG) as printer:
@@ -213,22 +213,28 @@ def benchmark(trials: int, output_dir: str = "report/img", seed: int | None = No
         {'n': 6, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 8, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},  # BAZOWA
+        {'n': 11, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 12, 'm': 60, 'q': 101, 'alpha': 0.01},
+        {'n': 13, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 14, 'm': 60, 'q': 101, 'alpha': 0.01},
-        {'n': 16, 'm': 60, 'q': 101, 'alpha': 0.01},  # Trudniejsze
+        {'n': 16, 'm': 60, 'q': 101, 'alpha': 0.01}, # Trudniejsze
         {'n': 18, 'm': 60, 'q': 101, 'alpha': 0.01}, # Bardzo trudne
         {'n': 20, 'm': 60, 'q': 101, 'alpha': 0.01}, # Prawdopodobnie niemożliwe dla BKZ-25
         
         # === Grupa 2: Wariacja α (stałe: n=10, m=60, q=101) ===
-        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.002},  # Bardzo łatwe
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.002},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.005},
-        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.008},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.015},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.02},
-        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.025},  # Trudne
-        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.03},   # Bardzo trudne
-        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.04},   # Granica?
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.025},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.03}, 
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.04},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.06},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.08},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.10},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.12},  
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.15},  
         
         # === Grupa 3: Wariacja m (stałe: n=10, q=101, α=0.01) ===
         {'n': 10, 'm': 25, 'q': 101, 'alpha': 0.01},   # m=2.5n - za mało?
@@ -238,15 +244,23 @@ def benchmark(trials: int, output_dir: str = "report/img", seed: int | None = No
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},   # m=6n
         {'n': 10, 'm': 75, 'q': 101, 'alpha': 0.01},   # m=7.5n
         {'n': 10, 'm': 90, 'q': 101, 'alpha': 0.01},   # m=9n
+        {'n': 10, 'm': 100, 'q': 101, 'alpha': 0.01},  # m=10n
+        {'n': 10, 'm': 120, 'q': 101, 'alpha': 0.01},  # m=12n
         
         # === Grupa 4: Wariacja q (stałe: n=10, m=60, α=0.01) ===
-        {'n': 10, 'm': 60, 'q': 53, 'alpha': 0.01},    # Małe q - łatwe
+        {'n': 10, 'm': 60, 'q': 31, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 41, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 53, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 73, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},    
         {'n': 10, 'm': 60, 'q': 149, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 199, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 251, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 307, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 401, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 503, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 601, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 991, 'alpha': 0.01},
     ]
     
     results_params = compare_parameters(param_sets, block_size=25, trials=trials, seed=used_seed)

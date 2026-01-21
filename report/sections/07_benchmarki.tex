@@ -1,0 +1,82 @@
+\section{Benchmarki}
+
+Współczesne kryptosystemy oparte na LWE (np. Kyber, standardyzowany przez NIST) używają parametrów znacznie wykraczających poza możliwości ataku typu primal: $n \geq 256$, $q \approx 3329$. Przy takich parametrach wymiar kraty przekracza 500, co czyni redukcję BKZ niepraktyczną -- szacowany czas ataku to miliardy lat. Poniższe eksperymenty przeprowadzono na parametrach ,,zabawkowych'' ($n \leq 20$, $q \leq 1000$), aby zademonstrować działanie ataku i zbadać wpływ poszczególnych parametrów na jego skuteczność.
+
+Wszystkie wyniki przedstawione w tej sekcji są uśrednione z 20 losowych instancji LWE. Benchmarki wykonano na procesorze AMD Ryzen 9 9900X (5.6 GHz). W każdym eksperymencie manipulowano jednym parametrem, pozostawiając pozostałe na wartościach bazowych: $n = 10$, $m = 60$, $q = 101$, $\alpha = 0.01$.
+
+\subsection{Wpływ rozmiaru bloku BKZ $\beta$}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/benchmark_blocks.png}
+    \caption{Skuteczność i czas ataku w zależności od rozmiaru bloku BKZ.}
+    \label{fig:bkz_blocks}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{img/block_size_impact.png}
+    \caption{Wpływ rozmiaru bloku BKZ na długość najkrótszego wektora w bazie.}
+    \label{fig:bkz_quality}
+\end{figure}
+
+
+Rozmiar bloku BKZ ma kluczowy wpływ na skuteczność ataku (Rys.~\ref{fig:bkz_blocks}). Dla małych bloków ($\beta < 15$) skuteczność jest bliska zeru. Znaczący wzrost następuje przy $\beta \approx 20$, osiągając 100\% dla $\beta = 40$. Jednocześnie czas wykonania rośnie wykładniczo -- dla $\beta = 40$ wynosi około 50 sekund, podczas gdy dla $\beta = 25$ jedynie ułamek sekundy.
+
+Rysunek~\ref{fig:bkz_quality} ilustruje jakość redukcji bazy. Przy $\beta \geq 15$ następuje gwałtowny spadek normy najkrótszego wektora (o 43\% względem LLL), co umożliwia odzyskanie sekretu. Jest to kluczowe, ponieważ atak Primal polega na znalezieniu wektora $(\mathbf{e}, \mathbf{s}, 1)$ -- im krótsza norma pierwszego wektora bazy, tym większa szansa, że jest to właśnie poszukiwany wektor.
+
+\subsection{Wpływ parametru szumu $\alpha$}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/param_alpha.png}
+    \caption{Skuteczność i czas ataku w zależności od parametru szumu $\alpha$.}
+    \label{fig:param_alpha}
+\end{figure}
+
+Parametr $\alpha$ determinuje odchylenie standardowe błędu ($\sigma = \alpha \cdot q$). Dla bardzo małych wartości ($\alpha < 0.005$) atak osiąga 100\% skuteczności. Wraz ze wzrostem $\alpha$ skuteczność gwałtownie spada, osiągając 0\% dla $\alpha \geq 0.10$. Czas wykonania pozostaje względnie stały, co wskazuje, że $\alpha$ wpływa na sukces, ale nie na złożoność obliczeniową redukcji.
+
+\subsection{Wpływ liczby próbek $m$}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/param_m.png}
+    \caption{Skuteczność i czas ataku w zależności od liczby próbek LWE ($m$).}
+    \label{fig:param_m}
+\end{figure}
+
+
+Liczba próbek $m$ wykazuje charakterystyczne optimum (Rys.~\ref{fig:param_m}). Dla $m < 40$ układ jest niedookreślony i atak zawodzi. Maksymalna skuteczność ($\sim$80\%) występuje przy $m \approx 55$. Dalsze zwiększanie $m$ nie poprawia skuteczności, ponieważ wymiar kraty ($m + n + 1$) rośnie, utrudniając redukcję BKZ. Czas wykonania rośnie liniowo z $m$.
+
+\subsection{Wpływ wymiaru sekretu $n$}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/param_n.png}
+    \caption{Skuteczność i czas ataku w zależności od wymiaru problemu LWE ($n$).}
+    \label{fig:param_n}
+\end{figure}
+
+Wymiar sekretu $n$ jest głównym parametrem bezpieczeństwa (Rys.~\ref{fig:param_n}). Dla $n \leq 8$ atak ma 100\% skuteczności. Skuteczność gwałtownie spada dla $n > 10$, osiągając 0\% przy $n \geq 16$. To potwierdza, że atak Primal jest praktyczny tylko dla niskich wymiarów -- współczesne kryptosystemy używają $n \geq 256$.
+
+\subsection{Wpływ modułu $q$}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/param_q.png}
+    \caption{Skuteczność i czas ataku w zależności od modułu $q$.}
+    \label{fig:param_q}
+\end{figure}
+
+Moduł $q$ wpływa na skuteczność ataku (Rys.~\ref{fig:param_q}). Dla małych $q < 50$ skuteczność jest najwyższa ($\sim$90\%) i maleje wraz ze wzrostem $q$, stabilizując się na poziomie około 15\% dla $q \geq 500$. Wahania na wykresie wynikają z losowości poszczególnych instancji. Większe $q$ zwiększa przestrzeń rozwiązań i długość wektorów w kracie, utrudniając znalezienie sekretu.
+
+\subsection{Jakość redukcji bazy}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{img/reduction_quality.png}
+    \caption{Porównanie norm wektorów bazy i profilu Gram-Schmidta dla różnych algorytmów redukcji.}
+    \label{fig:reduction_quality}
+\end{figure}
+
+Rysunek~\ref{fig:reduction_quality} porównuje jakość redukcji LLL i BKZ z różnymi rozmiarami bloków. Lewy wykres przedstawia normy kolejnych wektorów bazy -- po redukcji BKZ-30 (magenta) pierwsze wektory są znacznie krótsze niż w oryginalnej bazie (szara przerywana), co zwiększa szansę na znalezienie krótkiego wektora $(\mathbf{e}, \mathbf{s}, 1)$. Prawy wykres pokazuje profil Gram-Schmidta, który mierzy ,,jakość'' bazy. Dla oryginalnej bazy profil jest płaski, a następnie gwałtownie spada -- to oznacza słabą jakość bazy. Po redukcji BKZ profil opada łagodnie i monotonicznie, co świadczy o dobrej redukcji i ułatwia znalezienie krótkiego wektora, co jest kluczowe dla skuteczności ataku Primal.

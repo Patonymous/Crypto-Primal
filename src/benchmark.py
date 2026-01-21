@@ -54,10 +54,13 @@ def run_single_benchmark(
     found_s, _ = primal_attack(lwe, block_size)
     elapsed = time.time() - start
     
+    # Weryfikuj dokładnie czy znaleziony sekret jest poprawny
+    success = lwe.check_solution_exact(found_s)
+    
     return BenchmarkResult(
         block_size=block_size,
         time_seconds=elapsed,
-        success=(found_s is not None),
+        success=success,
         lattice_dim=m + n + 1
     )
 
@@ -243,47 +246,30 @@ def plot_block_size_comparison(results: dict, save_path: str = None):
     block_sizes = sorted(results.keys())
     success_rates = [results[bs]['success_rate'] * 100 for bs in block_sizes]
     avg_times = [results[bs]['avg_time'] for bs in block_sizes]
-    std_times = [results[bs]['std_time'] for bs in block_sizes]
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     
     # Wykres 1: Współczynnik sukcesu
-    bars1 = ax1.bar(range(len(block_sizes)), success_rates, color='steelblue', alpha=0.7)
+    ax1.plot(block_sizes, success_rates, 'o-', linewidth=2, markersize=8, color='#2E86AB')
     ax1.set_xlabel('Rozmiar bloku BKZ', fontsize=11)
-    ax1.set_ylabel('Współczynnik sukcesu (%)', fontsize=11)
+    ax1.set_ylabel('Wskaźnik sukcesu ataku (%)', fontsize=11)
     ax1.set_title('Skuteczność ataku w zależności od rozmiaru bloku BKZ', fontsize=12)
-    ax1.set_xticks(range(len(block_sizes)))
-    ax1.set_xticklabels([f'BKZ-{bs}' for bs in block_sizes])
-    ax1.set_ylim(0, 105)
-    ax1.grid(True, alpha=0.3, axis='y')
-    
-    # Dodaj wartości na słupkach
-    for i, (bar, val) in enumerate(zip(bars1, success_rates)):
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height + 2,
-                f'{val:.0f}%', ha='center', va='bottom', fontsize=9)
+    ax1.set_ylim(-5, 105)
+    ax1.grid(True, alpha=0.3)
     
     # Wykres 2: Czas wykonania
-    bars2 = ax2.bar(range(len(block_sizes)), avg_times, yerr=std_times,
-                    color='coral', alpha=0.7, capsize=5)
+    ax2.plot(block_sizes, avg_times, 'o-', linewidth=2, markersize=8, color='#A23B72')
     ax2.set_xlabel('Rozmiar bloku BKZ', fontsize=11)
     ax2.set_ylabel('Średni czas wykonania (s)', fontsize=11)
     ax2.set_title('Czas ataku w zależności od rozmiaru bloku BKZ', fontsize=12)
-    ax2.set_xticks(range(len(block_sizes)))
-    ax2.set_xticklabels([f'BKZ-{bs}' for bs in block_sizes])
-    ax2.grid(True, alpha=0.3, axis='y')
-    
-    # Dodaj wartości na słupkach
-    for i, (bar, val) in enumerate(zip(bars2, avg_times)):
-        height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2., height,
-                f'{val:.2f}s', ha='center', va='bottom', fontsize=9)
+    ax2.grid(True, alpha=0.3)
     
     plt.tight_layout()
     
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Zapisano: {save_path}")
+        plt.close()
     
     return fig
 
