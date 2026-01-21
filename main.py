@@ -7,6 +7,9 @@ from src.printer import Printer, Style
 from src.lwe import LWE
 from src.attack import primal_attack
 from src.regev import encrypt, decrypt
+from src.interactive import interactive_attack
+from src.benchmark import compare_block_sizes, print_comparison_table, compare_parameters, print_params_comparison_table
+from src.visualization import visualize_reduction, visualize_block_size_impact, plot_success_heatmap
 
 
 def save_lwe(lwe: LWE, private: bool) -> None:
@@ -133,6 +136,83 @@ def decrypt_message() -> None:
         printer(f"Odszyfrowana wiadomość: {decrypted_message}")
 
 
+def interactive(bkz_block_size: int) -> None:
+    """Tryb interaktywny ataku."""
+    with Printer(Style.LOG) as printer:
+        printer("Wczytywanie instancji LWE...", end="")
+    lwe = load_lwe(True)  # Potrzebujemy sekretu do weryfikacji
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    interactive_attack(lwe, bkz_block_size, auto=False)
+
+
+def benchmark(trials: int) -> None:
+    """Benchmark porównujący rozmiary bloków BKZ i parametry LWE."""
+    block_sizes = [10, 15, 20, 25, 30]
+    
+    # Część 1: Porównanie rozmiarów bloków dla aktualnej instancji LWE
+    with Printer(Style.LOG) as printer:
+        printer("Wczytywanie instancji LWE...", end="")
+    lwe = load_lwe(False)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    alpha = lwe.sigma / lwe.q
+    
+    with Printer(Style.INFO) as printer:
+        printer("")
+        printer("=" * 60)
+        printer("CZĘŚĆ 1: PORÓWNANIE ROZMIARÓW BLOKÓW BKZ")
+        printer("=" * 60)
+    
+    results_blocks = compare_block_sizes(
+        n=lwe.n, m=lwe.m, q=lwe.q, alpha=alpha,
+        block_sizes=block_sizes, trials=trials
+    )
+    print_comparison_table(results_blocks)
+    
+    # Część 2: Porównanie różnych parametrów LWE
+    with Printer(Style.INFO) as printer:
+        printer("")
+        printer("=" * 60)
+        printer("CZĘŚĆ 2: PORÓWNANIE PARAMETRÓW LWE")
+        printer("=" * 60)
+    
+    param_sets = [
+        {'n': 8, 'm': 50, 'q': 97, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},
+        {'n': 12, 'm': 70, 'q': 127, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.005},
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.02},
+        {'n': 10, 'm': 80, 'q': 101, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 199, 'alpha': 0.01},
+    ]
+    
+    results_params = compare_parameters(param_sets, block_size=25, trials=trials)
+    print_params_comparison_table(results_params)
+
+
+def visualize() -> None:
+    """Wizualizacja redukcji kraty."""
+    with Printer(Style.LOG) as printer:
+        printer("Wczytywanie instancji LWE...", end="")
+    lwe = load_lwe(False)
+    with Printer(Style.LOG) as printer:
+        printer(" Wykonano")
+    
+    with Printer(Style.INFO) as printer:
+        printer("Generowanie wykresów...")
+    
+    visualize_reduction(lwe, block_sizes=[10, 20, 30], save_path="reduction_quality.png")
+    visualize_block_size_impact(lwe, max_block=40, save_path="block_size_impact.png")
+    
+    with Printer(Style.SUCCESS) as printer:
+        printer("Wykresy zapisane do plików:")
+        printer("  - reduction_quality.png")
+        printer("  - block_size_impact.png")
+
+
 def attack_message(bkz_block_size: int) -> None:
     with Printer(Style.LOG) as printer:
         printer("Wczytywanie instancji LWE...", end="")
@@ -249,6 +329,15 @@ def main():
             printer("    Powinna być wywołana po akcji 'szyfruj'.")
             printer("    Przyjmuje opcjonalny parametr: rozmiar bloku BKZ")
             printer("    Domyślna wartość: 25")
+            printer("  i[nteraktywny] - atak krok po kroku z wyjaśnieniami")
+            printer("    Idealny do nauki i prezentacji.")
+            printer("    Przyjmuje opcjonalny parametr: rozmiar bloku BKZ")
+            printer("    Domyślna wartość: 25")
+            printer("  b[enchmark] - porównanie skuteczności ataku")
+            printer("    Testuje różne rozmiary bloków BKZ oraz parametry LWE.")
+            printer("    Przyjmuje opcjonalny parametr: liczba prób (domyślnie 3)")
+            printer("  w[izualizacja] - generuje wykresy jakości redukcji kraty")
+            printer("    Wymaga matplotlib. Zapisuje wykresy do plików PNG.")
             printer("")
             printer("Opis parametrów:")
             printer(
@@ -296,11 +385,22 @@ def main():
         bkz_block_size = get_param(2, int, "rozmiar bloku BKZ", default=25)
         attack_message(bkz_block_size)
 
+    elif "interaktywny".startswith(action):
+        bkz_block_size = get_param(2, int, "rozmiar bloku BKZ", default=25)
+        interactive(bkz_block_size)
+
+    elif "benchmark".startswith(action):
+        trials = get_param(2, int, "liczba prób", default=3)
+        benchmark(trials)
+
+    elif "wizualizacja".startswith(action):
+        visualize()
+
     else:
         with Printer(Style.ERROR) as printer:
             printer(
                 # cspell: disable-next-line
-                f"Akcja musi być jedną z: p[omoc], g[eneruj], s[zyfruj], o[dszyfruj] lub a[takuj], otrzymano: {action}"
+                f"Nieznana akcja: {action}. Użyj 'pomoc' aby zobaczyć dostępne opcje."
             )
         sys.exit(1)
 

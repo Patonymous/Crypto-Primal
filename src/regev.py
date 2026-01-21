@@ -23,13 +23,17 @@ def encrypt_bit(lwe: LWE, message_bit: int) -> tuple[np.ndarray, int]:
 
 def decrypt(lwe: LWE, ciphertexts: list[tuple[np.ndarray, int]]) -> str:
     bits = [decrypt_bit(lwe, ciphertext) for ciphertext in ciphertexts]
-    bytes = bytearray()
+    bytes_arr = bytearray()
     for i in range(0, len(bits), 8):
         byte = 0
         for j in range(8):
             byte |= bits[i + j] << (7 - j)
-        bytes.append(byte)
-    return bytes.decode()
+        bytes_arr.append(byte)
+    try:
+        return bytes_arr.decode('utf-8')
+    except UnicodeDecodeError:
+        # Jeśli nie można zdekodować jako UTF-8, zwróć reprezentację hex
+        return f"<błąd dekodowania: {bytes_arr.hex()}>"
 
 
 def decrypt_bit(lwe: LWE, ciphertext: tuple[np.ndarray, int]) -> int:
