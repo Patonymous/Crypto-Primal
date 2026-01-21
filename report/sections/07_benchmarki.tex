@@ -2,7 +2,7 @@
 
 Współczesne kryptosystemy oparte na LWE (np. Kyber, standardyzowany przez NIST) używają parametrów znacznie wykraczających poza możliwości ataku typu primal: $n \geq 256$, $q \approx 3329$. Przy takich parametrach wymiar kraty przekracza 500, co czyni redukcję BKZ niepraktyczną -- szacowany czas ataku to miliardy lat. Poniższe eksperymenty przeprowadzono na parametrach ,,zabawkowych'' ($n \leq 20$, $q \leq 1000$), aby zademonstrować działanie ataku i zbadać wpływ poszczególnych parametrów na jego skuteczność.
 
-Wszystkie wyniki przedstawione w tej sekcji są uśrednione z 20 losowych instancji LWE. Benchmarki wykonano na procesorze AMD Ryzen 9 9900X (5.6 GHz). W każdym eksperymencie manipulowano jednym parametrem, pozostawiając pozostałe na wartościach bazowych: $n = 10$, $m = 60$, $q = 101$, $\alpha = 0.01$.
+Wszystkie wyniki przedstawione w tej sekcji są uśrednione z 20 losowych instancji LWE. Benchmarki wykonano na procesorze AMD Ryzen 9 9900X (5.6 GHz). W każdym eksperymencie manipulowano jednym parametrem, pozostawiając pozostałe na wartościach bazowych: $\beta = 25$, $n = 10$, $m = 60$, $q = 101$, $\alpha = 0.01$.
 
 \subsection{Wpływ rozmiaru bloku BKZ $\beta$}
 
