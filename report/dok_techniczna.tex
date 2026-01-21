@@ -1,0 +1,211 @@
+\documentclass[11pt, a4paper]{article}
+
+% Pakiety podstawowe i językowe
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% Pakiety matematyczne
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% Pakiety do formatowania kodu i linków
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+
+% Konfiguracja wyświetlania kodu
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={ą}{{\k{a}}}1 {ć}{{\'c}}1 {ę}{{\k{e}}}1 {ł}{{\l{}}}1 {ń}{{\'n}}1 {ó}{{\'o}}1 {ś}{{\'s}}1 {ź}{{\'z}}1 {ż}{{\.z}}1
+}
+
+\lstset{style=mystyle}
+
+% Tytuł
+\title{\textbf{Dokumentacja Projektu: Atak Primal na LWE}\\ Implementacja i analiza kryptosystemu Regev}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Wstęp}
+Niniejszy dokument opisuje implementację oraz analizę bezpieczeństwa kryptosystemu opartego na problemie \textit{Learning With Errors} (LWE). Projekt zawiera implementację schematu szyfrowania Regeva oraz realizację ataku \textit{Primal Attack} wykorzystującego redukcję krat (LLL i BKZ).
+
+Celem projektu jest demonstracja podatności instancji LWE na ataki kratowe przy nieodpowiednim doborze parametrów oraz analiza wpływu rozmiaru bloku BKZ na skuteczność ataku.
+
+\section{Wymagania i Instalacja}
+\label{sec:requirements}
+
+\textbf{Uwaga:} Poprawne uruchomienie programu wymaga specyficznego środowiska ze względu na zależności matematyczne.
+
+\subsection{Wymagania Systemowe}
+\begin{itemize}
+    \item \textbf{System operacyjny:} Linux (zalecany: Ubuntu/Debian) lub macOS. 
+    \textit{Uruchomienie na Windows jest możliwe tylko poprzez WSL (Windows Subsystem for Linux), ponieważ biblioteka \texttt{fpylll} nie posiada oficjalnego wsparcia dla natywnego Windowsa.}
+    \item \textbf{Python:} Wersja \textbf{3.10} lub nowsza.
+    \textit{Kod źródłowy (plik \texttt{src/printer.py}) wykorzystuje instrukcję \texttt{match ... case}, która została wprowadzona w Pythonie 3.10.}
+\end{itemize}
+
+\subsection{Zależności Systemowe (Linux/WSL)}
+Przed instalacją bibliotek Pythona należy zainstalować biblioteki systemowe wymagane do obliczeń precyzyjnych i teorii liczb:
+
+\begin{lstlisting}[language=bash, caption=Instalacja bibliotek systemowych (Debian/Ubuntu)]
+sudo apt update
+sudo apt install build-essential python3-dev libgmp-dev libmpfr-dev
+\end{lstlisting}
+
+\subsection{Biblioteki Python}
+Projekt wymaga następujących bibliotek zewnętrznych:
+\begin{itemize}
+    \item \texttt{numpy} -- obliczenia macierzowe.
+    \item \texttt{fpylll} -- implementacja algorytmów redukcji krat (LLL, BKZ).
+    \item \texttt{matplotlib} -- generowanie wykresów do benchmarków.
+\end{itemize}
+
+Instalacja via pip:
+\begin{lstlisting}[language=bash, caption=Instalacja zależności Python]
+pip install numpy matplotlib fpylll
+\end{lstlisting}
+
+\section{Opis Techniczny}
+
+\subsection{Struktura Projektu}
+\begin{itemize}
+    \item \texttt{main.py} -- Główny punkt wejścia programu (CLI). Obsługuje argumenty i steruje przepływem.
+    \item \texttt{src/lwe.py} -- Klasa \texttt{LWE}. Odpowiada za generowanie kluczy ($A, s, e$), obliczanie $b = As + e \pmod q$ oraz zapis/odczyt instancji.
+    \item \texttt{src/regev.py} -- Implementacja szyfrowania i deszyfrowania metodą Regeva.
+    \item \texttt{src/attack.py} -- Implementacja ataku \textit{Primal}. Konstruuje macierz kraty i uruchamia redukcję.
+    \item \texttt{src/interactive.py} -- Tryb edukacyjny pokazujący atak krok po kroku.
+    \item \texttt{src/benchmark.py} -- Moduł testowy do analizy wydajności i skuteczności ataku.
+\end{itemize}
+
+\subsection{Model Matematyczny i Szyfrowanie}
+Instancja LWE zdefiniowana jest przez parametry $(n, m, q, \alpha)$, gdzie:
+\begin{itemize}
+    \item $n$ -- wymiar sekretu $s \in \mathbb{Z}_q^n$.
+    \item $m$ -- liczba próbek (wierszy macierzy $A$).
+    \item $q$ -- moduł (liczba pierwsza).
+    \item $\alpha$ -- parametr szumu, gdzie $\sigma = \alpha q$.
+\end{itemize}
+
+\textbf{Szyfrowanie (Regev):} Wiadomość jest kodowana bit po bicie. Dla bitu $x \in \{0, 1\}$:
+$$ c = \left( \sum_{i \in S} b_i \right) + x \cdot \lfloor q/2 \rfloor \pmod q $$
+gdzie $S$ jest losowym podzbiorem indeksów wierszy.
+
+\subsection{Atak Primal (Kannan's Embedding)}
+Atak polega na sprowadzeniu problemu LWE do problemu najkrótszego wektora (SVP) w kracie. Konstruowana jest macierz bazy $B$ o wymiarach $(m+n+1) \times (m+n+1)$:
+
+$$
+B = \begin{pmatrix} 
+q I_m & 0 & 0 \\
+A^T & I_n & 0 \\
+b^T & 0 & 1 
+\end{pmatrix}
+$$
+
+Poszukiwany jest krótki wektor w kracie, który odpowiada wektorowi błędów i sekretu:
+$$ v = (e, s, 1) \quad \text{lub} \quad v \cdot k $$
+Po konstrukcji bazy stosowana jest redukcja LLL (Lenstra–Lenstra–Lovász) oraz BKZ (Block Korkine-Zolotarev). Odzyskany wektor jest weryfikowany poprzez sprawdzenie poprawności deszyfrowania.
+
+\section{Instrukcja Użytkownika}
+
+Program uruchamiany jest z linii komend poprzez plik \texttt{main.py}.
+
+\subsection{Składnia}
+\begin{lstlisting}[language=bash]
+./main.py [akcja] [parametry...]
+\end{lstlisting}
+
+\subsection{Dostępne akcje}
+
+\subsubsection{1. Generowanie nowej instancji}
+Musi być wykonane jako pierwsze. Tworzy pliki \texttt{lwe.key} (prywatny) i \texttt{lwe.pub} (publiczny).
+\begin{lstlisting}[language=bash]
+# Składnia: generuj [n] [m] [q] [alpha]
+./main.py generuj 10 60 101 0.01
+\end{lstlisting}
+
+\subsubsection{2. Szyfrowanie wiadomości}
+Szyfruje ciąg znaków używając wygenerowanej instancji. Tworzy plik \texttt{ciphertext.bin}.
+\begin{lstlisting}[language=bash]
+./main.py szyfruj "TajnyTekst"
+\end{lstlisting}
+
+\subsubsection{3. Odszyfrowywanie (Legalne)}
+Używa klucza prywatnego do odczytania wiadomości.
+\begin{lstlisting}[language=bash]
+./main.py odszyfruj
+\end{lstlisting}
+
+\subsubsection{4. Atak (Odzyskiwanie sekretu)}
+Próbuje odtworzyć sekret $s$ wyłącznie na podstawie klucza publicznego, a następnie odszyfrować wiadomość.
+\begin{lstlisting}[language=bash]
+# Składnia: atakuj [rozmiar_bloku_BKZ]
+./main.py atakuj 25
+\end{lstlisting}
+\textit{Parametr rozmiar\_bloku\_BKZ (domyślnie 25) wpływa na siłę ataku i czas wykonania.}
+
+\subsubsection{5. Tryb Interaktywny}
+Edukacyjny tryb z opisem każdego kroku.
+\begin{lstlisting}[language=bash]
+./main.py interaktywny
+\end{lstlisting}
+
+\subsubsection{6. Benchmark}
+Przeprowadza serię testów i generuje wykresy w folderze \texttt{report/img}.
+\begin{lstlisting}[language=bash]
+# Składnia: benchmark [liczba_prób] [output_dir]
+./main.py benchmark 5 report/img
+\end{lstlisting}
+
+\section{Rozwiązywanie problemów}
+\begin{enumerate}
+    \item \textbf{Błąd: `No module named fpylll`} \\
+    Program nie może znaleźć biblioteki do krat. Upewnij się, że zainstalowałeś biblioteki systemowe (GMP, MPFR) przed uruchomieniem \texttt{pip install fpylll}. Zobacz sekcję \ref{sec:requirements}.
+    
+    \item \textbf{Błąd składni w pliku `printer.py`} \\
+    Twoja wersja Pythona jest starsza niż 3.10. Zaktualizuj Pythona.
+    
+    \item \textbf{Atak nie powiódł się} \\
+    Dla parametrów domyślnych ($n=10$) atak BKZ-20 lub BKZ-25 powinien być skuteczny. Jeśli atak się nie udaje:
+    \begin{itemize}
+        \item Zwiększ rozmiar bloku BKZ (np. do 30 lub 35).
+        \item Zwiększ liczbę próbek $m$ przy generowaniu instancji (np. $m=70$).
+        \item Zmniejsz szum $\alpha$ (np. $0.005$).
+    \end{itemize}
+\end{enumerate}
+
+\end{document}
