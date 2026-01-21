@@ -207,46 +207,46 @@ def benchmark(trials: int, output_dir: str = "report/img", seed: int | None = No
         printer("CZĘŚĆ 2: PORÓWNANIE PARAMETRÓW LWE")
         printer("=" * 60)
     
-    # Zestawy parametrów - szerszy zakres do znalezienia granicy ataku
+    # Zestawy parametrów
     param_sets = [
-        # === Grupa 1: Wariacja wymiaru n (stałe: α=0.01, m=6n, q~10n) ===
-        # Szukamy granicy gdzie atak przestaje działać
-        {'n': 6, 'm': 36, 'q': 67, 'alpha': 0.01},
-        {'n': 8, 'm': 48, 'q': 83, 'alpha': 0.01},
+        # === Grupa 1: Wariacja wymiaru n (stałe: α=0.01, m=60, q=101) ===
+        {'n': 6, 'm': 60, 'q': 101, 'alpha': 0.01},
+        {'n': 8, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},  # BAZOWA
-        {'n': 12, 'm': 72, 'q': 127, 'alpha': 0.01},
-        {'n': 14, 'm': 84, 'q': 151, 'alpha': 0.01},
-        {'n': 16, 'm': 96, 'q': 167, 'alpha': 0.01},  # Trudniejsze
-        {'n': 18, 'm': 108, 'q': 181, 'alpha': 0.01}, # Bardzo trudne
-        {'n': 20, 'm': 120, 'q': 199, 'alpha': 0.01}, # Prawdopodobnie niemożliwe dla BKZ-25
+        {'n': 12, 'm': 60, 'q': 101, 'alpha': 0.01},
+        {'n': 14, 'm': 60, 'q': 101, 'alpha': 0.01},
+        {'n': 16, 'm': 60, 'q': 101, 'alpha': 0.01},  # Trudniejsze
+        {'n': 18, 'm': 60, 'q': 101, 'alpha': 0.01}, # Bardzo trudne
+        {'n': 20, 'm': 60, 'q': 101, 'alpha': 0.01}, # Prawdopodobnie niemożliwe dla BKZ-25
         
-        # === Grupa 2: Wariacja α - szerszy zakres do granicy (stałe: n=10, m=60, q=101) ===
+        # === Grupa 2: Wariacja α (stałe: n=10, m=60, q=101) ===
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.002},  # Bardzo łatwe
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.005},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.008},
-        # alpha=0.01 już w grupie 1
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.015},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.02},
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.025},  # Trudne
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.03},   # Bardzo trudne
         {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.04},   # Granica?
         
-        # === Grupa 3: Wariacja m - stosunek m/n (stałe: n=10, q=101, α=0.01) ===
+        # === Grupa 3: Wariacja m (stałe: n=10, q=101, α=0.01) ===
         {'n': 10, 'm': 25, 'q': 101, 'alpha': 0.01},   # m=2.5n - za mało?
         {'n': 10, 'm': 35, 'q': 101, 'alpha': 0.01},   # m=3.5n
         {'n': 10, 'm': 45, 'q': 101, 'alpha': 0.01},   # m=4.5n
         {'n': 10, 'm': 55, 'q': 101, 'alpha': 0.01},   # m=5.5n
-        # m=60 już w grupie 1
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},   # m=6n
         {'n': 10, 'm': 75, 'q': 101, 'alpha': 0.01},   # m=7.5n
         {'n': 10, 'm': 90, 'q': 101, 'alpha': 0.01},   # m=9n
         
-        # === Grupa 4: Wariacja q - większy zakres (stałe: n=10, m=60, α=0.01) ===
+        # === Grupa 4: Wariacja q (stałe: n=10, m=60, α=0.01) ===
         {'n': 10, 'm': 60, 'q': 53, 'alpha': 0.01},    # Małe q - łatwe
         {'n': 10, 'm': 60, 'q': 73, 'alpha': 0.01},
-        # q=101 już w grupie 1
+        {'n': 10, 'm': 60, 'q': 101, 'alpha': 0.01},    
         {'n': 10, 'm': 60, 'q': 149, 'alpha': 0.01},
-        {'n': 10, 'm': 60, 'q': 199, 'alpha': 0.01},   # Trudne
-        {'n': 10, 'm': 60, 'q': 251, 'alpha': 0.01},   # Bardzo trudne
+        {'n': 10, 'm': 60, 'q': 199, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 251, 'alpha': 0.01},
+        {'n': 10, 'm': 60, 'q': 307, 'alpha': 0.01},
     ]
     
     results_params = compare_parameters(param_sets, block_size=25, trials=trials, seed=used_seed)
