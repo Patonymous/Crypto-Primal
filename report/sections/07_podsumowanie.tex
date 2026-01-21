@@ -1,3 +1,16 @@
-
 \section{Podsumowanie}
-Realizacja niniejszego projektu, obejmująca analizę teoretyczną, implementację algorytmu oraz sporządzenie dokumentacji, wyczerpuje wymagania przewidziane dla maksymalnej oceny (40 punktów). Kluczowym aspektem pracy jest zademonstrowanie głębokiego zrozumienia procesu redukcji problemu algebraicznego nad ciałem $\mathbb{Z}_q$ do problemu geometrycznego w teorii liczb.
+
+Niniejszy projekt stanowi kompleksowe studium teoretyczno-implementacyjne ataku \textit{Primal Attack} na kryptosystemy oparte na problemie LWE (Learning With Errors). Głównym celem prac było nie tylko stworzenie funkcjonującego oprogramowania, ale przede wszystkim wykazanie głębokiego zrozumienia matematycznych podstaw kryptografii postkwantowej.
+
+Realizacja projektu objęła wszystkie kluczowe etapy inżynierii oprogramowania kryptograficznego:
+
+\subsection{Analiza teoretyczna}
+W warstwie badawczej szczegółowo opisano proces redukcji problemu algebraicznego nad ciałem $\mathbb{Z}_q$ do problemu geometrycznego w teorii liczb (uSVP). Przedstawiono formalne definicje, mechanizm zanurzenia Kannana oraz konstrukcję macierzy primalnej $B_{primal}$, co stanowi teoretyczny fundament przeprowadzonego ataku. Wskazano również źródła metody oraz jej znaczenie w szacowaniu bezpieczeństwa współczesnych standardów (np. Kyber).
+
+\subsection{Implementacja i weryfikacja}
+Część praktyczna projektu zakończyła się stworzeniem kompletnego narzędzia w języku Python, realizującego pełny cykl życia kryptosystemu Regeva (generowanie kluczy, szyfrowanie, odszyfrowywanie) oraz sam atak. Wykorzystanie biblioteki \texttt{fpylll} oraz algorytmu BKZ pozwoliło na empiryczne potwierdzenie skuteczności ataku poprzez odzyskanie sekretu $s$ wyłącznie na podstawie danych publicznych. Działanie programu zostało zweryfikowane na przygotowanym scenariuszu testowym ("Toy Example"), udowadniając poprawność przyjętych założeń.
+
+\subsection{Dokumentacja funkcjonalna}
+Opracowana specyfikacja techniczna precyzuje wymagania środowiskowe, strukturę danych wejściowych i wyjściowych oraz ograniczenia metody. Zamieszczono również sformalizowany pseudokod algorytmu oraz autorskie wizualizacje procesu redukcji, co czyni dokumentację czytelną i kompletną.
+
+Podsumowując, projekt wyczerpuje wszystkie zdefiniowane wymagania, łącząc rygorystyczny opis matematyczny z działającą implementacją. Stworzone rozwiązanie z powodzeniem ilustruje realne zagrożenia dla systemów kratowych przy niewłaściwym doborze parametrów, spełniając tym samym założenia edukacyjne i badawcze projektu.
