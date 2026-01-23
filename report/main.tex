@@ -31,7 +31,11 @@
 \renewcommand{\algorithmicrequire}{\textbf{Dane wejściowe:}}
 \renewcommand{\algorithmicensure}{\textbf{Wynik:}}
 
-% Linki i metadane
+% Konfiguracja nagłówków
+\usepackage{titlesec}
+\titlelabel{\thetitle.\quad}
+
+% Linki i metadane (hyperref powinien być załadowany jako ostatni)
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -41,10 +45,6 @@
     pdftitle={Dokumentacja Projektowa - Atak Primal},
     pdfauthor={Kryptologia Akademicka}
 }
-
-% Konfiguracja nagłówków
-\usepackage{titlesec}
-\titlelabel{\thetitle.\quad}
 
 % Definicje twierdzeń
 \theoremstyle{definition}
