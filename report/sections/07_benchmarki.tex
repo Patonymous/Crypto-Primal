@@ -61,15 +61,15 @@ Wymiar sekretu $n$ jest głównym parametrem bezpieczeństwa (Rys.~\ref{fig:para
 
 \subsection{Wpływ modułu $q$}
 
+Moduł $q$ wpływa na skuteczność ataku (Rys.~\ref{fig:param_q}). Dla małych $q < 50$ skuteczność jest najwyższa ($\sim$90\%) i maleje wraz ze wzrostem $q$, stabilizując się na poziomie około 15\% dla $q \geq 500$. Wahania na wykresie wynikają z losowości poszczególnych instancji. Większe $q$ zwiększa przestrzeń rozwiązań i długość wektorów w kracie, utrudniając znalezienie sekretu.
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{img/param_q.png}
     \caption{Skuteczność i czas ataku w zależności od modułu $q$.}
     \label{fig:param_q}
+
 \end{figure}
-
-Moduł $q$ wpływa na skuteczność ataku (Rys.~\ref{fig:param_q}). Dla małych $q < 50$ skuteczność jest najwyższa ($\sim$90\%) i maleje wraz ze wzrostem $q$, stabilizując się na poziomie około 15\% dla $q \geq 500$. Wahania na wykresie wynikają z losowości poszczególnych instancji. Większe $q$ zwiększa przestrzeń rozwiązań i długość wektorów w kracie, utrudniając znalezienie sekretu.
-
 \subsection{Jakość redukcji bazy}
 
 \begin{figure}[htbp]
